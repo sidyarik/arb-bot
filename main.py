@@ -32,7 +32,7 @@ async def watcher(context: ContextTypes.DEFAULT_TYPE):
     for item in opportunities:
         key = item["symbol"]
         if state.get(key):
-            continue  # уже уведомляли
+            continue
 
         msg = (
             f"🚨 LOAN OPPORTUNITY\n\n"
@@ -51,7 +51,6 @@ async def watcher(context: ContextTypes.DEFAULT_TYPE):
 
         state[key] = True
 
-    # если токен пропал — разрешаем алерт снова
     current = {o["symbol"] for o in opportunities}
     for k in list(state.keys()):
         if k not in current:
@@ -61,11 +60,16 @@ async def watcher(context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == "__main__":
+    # DEBUG
+    print("===== ENV DEBUG =====")
+    print("TOKEN:", config.TELEGRAM_TOKEN)
+    print("CHAT_ID:", config.TELEGRAM_CHAT_ID)
+    print("=====================")
+
     app = ApplicationBuilder().token(config.TELEGRAM_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
 
-    # ⏱ запускаем watcher каждые N секунд
     app.job_queue.run_repeating(
         watcher,
         interval=config.SCAN_INTERVAL_SEC,
