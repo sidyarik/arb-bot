@@ -1,19 +1,13 @@
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# Telegram
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = int(os.environ.get("TELEGRAM_CHAT_ID", "0"))
 
-def get_required_env(name):
-    value = os.environ.get(name)
-    if value is None:
-        raise RuntimeError(f"{name} not set")
-    return value
+# Binance API
+BINANCE_API_KEY = os.environ.get("BINANCE_API_KEY")
+BINANCE_SECRET = os.environ.get("BINANCE_SECRET")
 
-TELEGRAM_TOKEN = get_required_env("TELEGRAM_TOKEN")
-TELEGRAM_CHAT_ID = int(get_required_env("TELEGRAM_CHAT_ID"))
-
-BINANCE_API_KEY = get_required_env("BINANCE_API_KEY")
-BINANCE_SECRET = get_required_env("BINANCE_SECRET")
-
-FUNDING_THRESHOLD = float(os.getenv("FUNDING_THRESHOLD", -0.005))
-SCAN_INTERVAL_SEC = int(os.getenv("SCAN_INTERVAL_SEC", 10))
+# Strategy settings
+FUNDING_THRESHOLD = float(os.environ.get("FUNDING_THRESHOLD", "0.05"))
+SCAN_INTERVAL_SEC = int(os.environ.get("SCAN_INTERVAL_SEC", "60"))
