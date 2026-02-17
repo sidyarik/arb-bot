@@ -1,5 +1,8 @@
 {
+    "build": {
+      "builder": "NIXPACKS"
+    },
     "deploy": {
-      "startCommand": "python main.py"
+      "startCommand": "TELEGRAM_TOKEN=8552521162:AAFdWoU3H2ApT4dAC-8F8-JdJYy5uf9n4DI TELEGRAM_CHAT_ID=1042889275 BINANCE_API_KEY=3cR1oFC33kJ6dlokzPUARcv3ViThRBKjwYxTRQEy6JjXHeXlT5WXpL8CP0mUFsTb BINANCE_SECRET=0u6M7OslbhbHr4IDgOc31kHqBrvo7kjPAr00gPLjubQZ1AKFrIRMag0zALl0vYx2 FUNDING_THRESHOLD=0.05 SCAN_INTERVAL_SEC=60 python main.py"
     }
   }
