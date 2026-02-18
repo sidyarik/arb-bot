@@ -1,80 +1,58 @@
-import json
-import os
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from scanner.binance import scan_opportunities
+import asyncio
+
+from core.aggregator import collect_all_markets
+from core.market_engine import build_opportunities
+from strategies.cross_exchange import filter_opportunities
+from telegram_bot import TelegramNotifier
 import config
 
 
-STATE_FILE = "state.json"
+async def engine_loop(notifier: TelegramNotifier):
+
+    while True:
+        try:
+            markets = collect_all_markets()
+
+            opportunities = build_opportunities(markets)
+
+            filtered = filter_opportunities(opportunities)
+
+            for opp in filtered:
+
+                message = (
+                    f"🚨 CROSS-EXCHANGE OPPORTUNITY\n\n"
+                    f"{opp.symbol}\n\n"
+                    f"SELL SPOT: {opp.spot_exchange} @ {opp.spot_price}\n"
+                    f"LONG FUTURES: {opp.futures_exchange} @ {opp.futures_price}\n\n"
+                    f"Spread: {opp.spread * 100:.4f}%\n"
+                    f"Funding: {opp.funding_rate * 100:.4f}%\n"
+                )
+
+                await notifier.send_alert(message)
+
+        except Exception as e:
+            print("ENGINE ERROR:", e)
+
+        await asyncio.sleep(config.SCAN_INTERVAL_SEC)
 
 
-def load_state():
-    if not os.path.exists(STATE_FILE):
-        return {}
-    with open(STATE_FILE, "r") as f:
-        return json.load(f)
+async def main():
 
+    notifier = TelegramNotifier()
 
-def save_state(state):
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f)
+    # Запускаем engine как фоновую задачу
+    asyncio.create_task(engine_loop(notifier))
 
+    # Запускаем telegram polling внутри текущего loop
+    await notifier.app.initialize()
+    await notifier.app.start()
+    await notifier.app.updater.start_polling()
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🚨 Arbitrage watcher started")
+    print("🚀 Cross-exchange arb engine started")
 
-
-async def watcher(context: ContextTypes.DEFAULT_TYPE):
-    state = load_state()
-    opportunities = scan_opportunities()
-
-    for item in opportunities:
-        key = item["symbol"]
-        if state.get(key):
-            continue
-
-        msg = (
-            f"🚨 LOAN OPPORTUNITY\n\n"
-            f"{item['symbol']}\n"
-            f"Funding: {item['funding'] * 100:.4f}%\n"
-            f"Spread: {item['spread']:.2f}%\n"
-        )
-
-        if item["hours_to_funding"] is not None:
-            msg += f"Next funding in: {item['hours_to_funding']}h\n"
-
-        await context.bot.send_message(
-            chat_id=config.TELEGRAM_CHAT_ID,
-            text=msg
-        )
-
-        state[key] = True
-
-    current = {o["symbol"] for o in opportunities}
-    for k in list(state.keys()):
-        if k not in current:
-            state[k] = False
-
-    save_state(state)
+    # Держим процесс живым
+    await notifier.app.updater.idle()
 
 
 if __name__ == "__main__":
-    # DEBUG
-    print("===== ENV DEBUG =====")
-    print("TOKEN:", config.TELEGRAM_TOKEN)
-    print("CHAT_ID:", config.TELEGRAM_CHAT_ID)
-    print("=====================")
-
-    app = ApplicationBuilder().token(config.TELEGRAM_TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-
-    app.job_queue.run_repeating(
-        watcher,
-        interval=config.SCAN_INTERVAL_SEC,
-        first=5
-    )
-
-    print("Watcher is running...")
-    app.run_polling()
+    asyncio.run(main())
