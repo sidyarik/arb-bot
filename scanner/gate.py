@@ -4,6 +4,7 @@ from core.models import MarketData
 GATE_SPOT_URL = "https://api.gateio.ws/api/v4/spot/tickers"
 GATE_FUTURES_URL = "https://api.gateio.ws/api/v4/futures/usdt/tickers"
 
+# test
 
 def fetch_gate():
     results = []
