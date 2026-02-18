@@ -30,11 +30,11 @@ GATE_SECRET = os.environ.get("GATE_SECRET")
 # ==============================
 
 # Минимальный спред между биржами (в процентах)
-MIN_SPREAD_PERCENT = float(os.environ.get("MIN_SPREAD_PERCENT", "0.3"))
+MIN_SPREAD_PERCENT = float(os.environ.get("MIN_SPREAD_PERCENT", "0.005"))
 
 # Минимальный отрицательный funding (в процентах)
 # Например 0.05 = 0.05%
-FUNDING_THRESHOLD = float(os.environ.get("FUNDING_THRESHOLD", "0.05"))
+FUNDING_THRESHOLD = float(os.environ.get("FUNDING_THRESHOLD", "0.0005"))
 
 # Интервал сканирования
-SCAN_INTERVAL_SEC = int(os.environ.get("SCAN_INTERVAL_SEC", "60"))
+SCAN_INTERVAL_SEC = int(os.environ.get("SCAN_INTERVAL_SEC", "10"))
