@@ -1,27 +1,21 @@
-from core.market_engine import build_opportunities
 import config
 
 
-MIN_SPREAD = 0.005  # 0.5%
-
-
-def filter_opportunities(markets: dict):
-
-    raw_opportunities = build_opportunities(markets)
+def filter_opportunities(opportunities):
 
     filtered = []
 
-    for op in raw_opportunities:
+    for op in opportunities:
 
         # 1️⃣ токен должен быть доступен для займа
         if not op.borrow_available:
             continue
 
-        # 2️⃣ спред минимум 0.5%
-        has_spread = op.spread >= MIN_SPREAD_PERCENT
+        # 2️⃣ фильтр по спреду
+        has_spread = op.spread > config.MIN_SPREAD_PERCENT
 
-        # 3️⃣ funding строго отрицательный и ниже порога
-        has_funding = op.funding_rate <= -config.FUNDING_THRESHOLD
+        # 3️⃣ фильтр по funding (только отрицательный)
+        has_funding = op.funding_rate < -config.FUNDING_THRESHOLD
 
         if has_spread or has_funding:
             filtered.append(op)
