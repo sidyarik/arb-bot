@@ -1,4 +1,3 @@
-import asyncio
 from core.aggregator import collect_all_markets
 from core.market_engine import build_opportunities
 from strategies.cross_exchange import filter_opportunities
@@ -9,63 +8,70 @@ import config
 sent_cache = set()
 
 
-async def engine_loop(notifier: TelegramNotifier):
+async def engine_loop(context):
 
-    while True:
-        try:
-            markets = collect_all_markets()
+    try:
+        markets = collect_all_markets()
 
-            opportunities = build_opportunities(markets)
+        opportunities = build_opportunities(markets)
 
-            filtered = filter_opportunities(opportunities)
+        filtered = filter_opportunities(opportunities)
 
-            for opp in filtered:
+        for opp in filtered:
 
-                key = (
-                    opp.symbol,
-                    opp.spot_exchange,
-                    opp.futures_exchange
-                )
+            key = (
+                opp.symbol,
+                opp.spot_exchange,
+                opp.futures_exchange
+            )
 
-                # 🔒 анти-спам
-                if key in sent_cache:
-                    continue
+            if key in sent_cache:
+                continue
 
-                message = (
-                    f"🚨 CROSS-EXCHANGE OPPORTUNITY\n\n"
-                    f"{opp.symbol}\n"
-                    f"SELL SPOT: {opp.spot_exchange} @ {opp.spot_price}\n"
-                    f"LONG FUTURES: {opp.futures_exchange} @ {opp.futures_price}\n"
-                    f"Spread: {opp.spread * 100:.4f}%\n"
-                    f"Funding: {opp.funding_rate * 100:.4f}%\n"
-                )
+            message = (
+                f"🚨 CROSS-EXCHANGE OPPORTUNITY\n\n"
+                f"{opp.symbol}\n"
+                f"SELL SPOT: {opp.spot_exchange} @ {opp.spot_price}\n"
+                f"LONG FUTURES: {opp.futures_exchange} @ {opp.futures_price}\n"
+                f"Spread: {opp.spread * 100:.4f}%\n"
+                f"Funding: {opp.funding_rate * 100:.4f}%\n"
+            )
 
-                await notifier.send_alert(message)
+            await context.bot.send_message(
+                chat_id=config.TELEGRAM_CHAT_ID,
+                text=message
+            )
 
-                sent_cache.add(key)
+            sent_cache.add(key)
 
-            # очищаем кэш если ситуация пропала
-            current_keys = {
-                (op.symbol, op.spot_exchange, op.futures_exchange)
-                for op in filtered
-            }
+        current_keys = {
+            (op.symbol, op.spot_exchange, op.futures_exchange)
+            for op in filtered
+        }
 
-            sent_cache.intersection_update(current_keys)
+        sent_cache.intersection_update(current_keys)
 
-        except Exception as e:
-            print("ENGINE ERROR:", e)
-
-        await asyncio.sleep(config.SCAN_INTERVAL_SEC)
+    except Exception as e:
+        print("ENGINE ERROR:", e)
 
 
-async def main():
+def main():
 
     notifier = TelegramNotifier()
 
-    asyncio.create_task(engine_loop(notifier))
+    app = notifier.app
 
-    notifier.run()
+    # запускаем engine как повторяющуюся задачу
+    app.job_queue.run_repeating(
+        engine_loop,
+        interval=config.SCAN_INTERVAL_SEC,
+        first=5
+    )
+
+    print("🚀 Cross-exchange arb engine started")
+
+    app.run_polling()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
