@@ -31,6 +31,9 @@ def calculate_spread(spot_price: float, futures_price: float) -> float:
 
 
 def build_opportunities(markets: dict):
+
+    print("DEBUG TYPE:", type(markets))
+    
     opportunities = []
 
     for symbol, exchanges in markets.items():
