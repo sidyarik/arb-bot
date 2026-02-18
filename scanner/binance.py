@@ -1,70 +1,51 @@
-import ccxt
-import config
-import time
+import requests
+from core.models import MarketData
 
 
-def scan_opportunities():
-    futures = ccxt.binanceusdm({"enableRateLimit": True})
-    spot = ccxt.binance({
-        "apiKey": config.BINANCE_API_KEY,
-        "secret": config.BINANCE_SECRET,
-        "enableRateLimit": True
-    })
+BINANCE_SPOT_URL = "https://api.binance.com/api/v3/ticker/bookTicker"
+BINANCE_FUTURES_URL = "https://fapi.binance.com/fapi/v1/ticker/bookTicker"
+BINANCE_FUNDING_URL = "https://fapi.binance.com/fapi/v1/premiumIndex"
 
-    # 1) loanable tokens (Crypto Loans)
-    loanable = set()
-    try:
-        loan_data = spot.sapiGetLoanLoanableData()
-        for item in loan_data:
-            loanable.add(item["loanCoin"])
-    except:
-        return []
+
+def fetch_binance():
+    spot_data = requests.get(BINANCE_SPOT_URL, timeout=10).json()
+    futures_data = requests.get(BINANCE_FUTURES_URL, timeout=10).json()
+    funding_data = requests.get(BINANCE_FUNDING_URL, timeout=10).json()
+
+    futures_map = {item["symbol"]: item for item in futures_data}
+    funding_map = {item["symbol"]: item for item in funding_data}
 
     results = []
 
-    funding_rates = futures.fetch_funding_rates()
-    futures_markets = futures.load_markets()
-    spot_markets = spot.load_markets()
+    for spot in spot_data:
 
-    for symbol, fr in funding_rates.items():
-        funding = fr.get("fundingRate")
-        if funding is None or funding > config.FUNDING_THRESHOLD:
+        symbol = spot["symbol"]
+
+        if not symbol.endswith("USDT"):
             continue
 
-        fm = futures_markets.get(symbol)
-        if not fm or fm.get("quote") != "USDT":
+        if symbol not in futures_map:
             continue
 
-        base = fm.get("base")
-        if base not in loanable:
-            continue
+        fut = futures_map[symbol]
+        funding = funding_map.get(symbol, {})
 
-        spot_symbol = f"{base}/USDT"
-        if spot_symbol not in spot_markets:
-            continue
+        market = MarketData(
+            exchange="binance",
+            symbol=symbol,
 
-        try:
-            sp = spot.fetch_ticker(spot_symbol)["last"]
-            fp = futures.fetch_ticker(symbol)["last"]
-            if not sp or not fp:
-                continue
+            spot_bid=float(spot["bidPrice"]),
+            spot_ask=float(spot["askPrice"]),
 
-            spread = (fp - sp) / sp * 100
+            futures_bid=float(fut["bidPrice"]),
+            futures_ask=float(fut["askPrice"]),
 
-            # funding interval (обычно 8h, но берём точно)
-            next_funding_ts = fr.get("nextFundingTimestamp")
-            hours_to_funding = None
-            if next_funding_ts:
-                hours_to_funding = round((next_funding_ts - int(time.time()*1000)) / 3_600_000, 2)
+            funding_rate=float(funding.get("lastFundingRate", 0)),
 
-            results.append({
-                "symbol": symbol,
-                "funding": funding,
-                "spread": spread,
-                "hours_to_funding": hours_to_funding
-            })
+            borrow_rate=None,
+            borrow_available=True
+        )
 
-        except:
-            continue
+        results.append(market)
 
     return results
