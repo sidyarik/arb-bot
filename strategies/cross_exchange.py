@@ -1,13 +1,11 @@
-from core.market_engine import build_opportunities
 import config
 
 
-def filter_opportunities(markets: dict):
-    raw_opportunities = build_opportunities(markets)
+def filter_opportunities(opportunities: list):
 
     filtered = []
 
-    for op in raw_opportunities:
+    for op in opportunities:
 
         # 1️⃣ Токен должен быть доступен для займа
         if not op.borrow_available:
