@@ -1,77 +1,82 @@
 import requests
 from core.models import MarketData
 
-
-GATE_SPOT_URL = "https://api.gateio.ws/api/v4/spot/order_book?currency_pair={}&limit=1"
-GATE_FUTURES_URL = "https://api.gateio.ws/api/v4/futures/usdt/order_book?contract={}&limit=1"
-GATE_FUNDING_URL = "https://api.gateio.ws/api/v4/futures/usdt/contracts"
+GATE_SPOT_URL = "https://api.gateio.ws/api/v4/spot/tickers"
+GATE_FUTURES_URL = "https://api.gateio.ws/api/v4/futures/usdt/tickers"
 
 
 def fetch_gate():
     results = []
 
     try:
-        # Получаем список фьючерсных контрактов (там есть funding)
-        futures_contracts = requests.get(GATE_FUNDING_URL, timeout=10).json()
+        spot_resp = requests.get(GATE_SPOT_URL, timeout=10)
+        futures_resp = requests.get(GATE_FUTURES_URL, timeout=10)
 
-        for contract in futures_contracts:
+        if spot_resp.status_code != 200:
+            print("GATE spot error:", spot_resp.status_code)
+            return []
 
-            symbol = contract["name"]  # BTC_USDT
-            if not symbol.endswith("_USDT"):
+        if futures_resp.status_code != 200:
+            print("GATE futures error:", futures_resp.status_code)
+            return []
+
+        spot_data = spot_resp.json()
+        futures_data = futures_resp.json()
+
+        if not isinstance(spot_data, list):
+            print("GATE spot not list")
+            return []
+
+        if not isinstance(futures_data, list):
+            print("GATE futures not list")
+            return []
+
+        futures_map = {}
+
+        for f in futures_data:
+            symbol = f.get("contract")
+            if not symbol:
                 continue
 
-            spot_symbol = symbol
+            # Gate формат: BTC_USDT
+            futures_map[symbol] = f
+
+        for s in spot_data:
+            symbol = s.get("currency_pair")
+
+            if not symbol or not symbol.endswith("_USDT"):
+                continue
+
+            if symbol not in futures_map:
+                continue
+
+            fut = futures_map[symbol]
 
             try:
-                # SPOT
-                spot_resp = requests.get(
-                    GATE_SPOT_URL.format(spot_symbol),
-                    timeout=10
-                ).json()
-
-                if not spot_resp.get("bids") or not spot_resp.get("asks"):
-                    continue
-
-                spot_bid = float(spot_resp["bids"][0][0])
-                spot_ask = float(spot_resp["asks"][0][0])
-
-                # FUTURES
-                fut_resp = requests.get(
-                    GATE_FUTURES_URL.format(symbol),
-                    timeout=10
-                ).json()
-
-                if not fut_resp.get("bids") or not fut_resp.get("asks"):
-                    continue
-
-                futures_bid = float(fut_resp["bids"][0]["p"])
-                futures_ask = float(fut_resp["asks"][0]["p"])
-
-                funding_rate = float(contract.get("funding_rate", 0))
-
                 market = MarketData(
                     exchange="gate",
-                    symbol=symbol.replace("_", ""),
+                    symbol=symbol.replace("_", ""),  # BTCUSDT формат
 
-                    spot_bid=spot_bid,
-                    spot_ask=spot_ask,
+                    spot_bid=float(s["highest_bid"]),
+                    spot_ask=float(s["lowest_ask"]),
 
-                    futures_bid=futures_bid,
-                    futures_ask=futures_ask,
+                    futures_bid=float(fut["highest_bid"]),
+                    futures_ask=float(fut["lowest_ask"]),
 
-                    funding_rate=funding_rate,
+                    funding_rate=float(fut.get("funding_rate", 0)),
 
                     borrow_rate=None,
-                    borrow_available=True
+                    borrow_available=True,
                 )
 
                 results.append(market)
 
-            except:
+            except Exception as parse_error:
+                print("GATE parse error:", parse_error)
                 continue
 
-        return results
-
     except Exception as e:
-        print("GATE ERROR:", e)
+        print("GATE FETCH ERROR:", e)
         return []
+
+    return results
