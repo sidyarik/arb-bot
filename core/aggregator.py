@@ -5,7 +5,6 @@ from scanner.gate import fetch_gate
 
 
 def collect_all_markets():
-
     data = []
 
     data.extend(fetch_binance())
@@ -16,7 +15,6 @@ def collect_all_markets():
     markets = {}
 
     for item in data:
-
         if item.symbol not in markets:
             markets[item.symbol] = {}
 
