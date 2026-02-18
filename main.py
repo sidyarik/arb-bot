@@ -3,7 +3,7 @@ import asyncio
 from core.aggregator import collect_all_markets
 from core.market_engine import build_opportunities
 from strategies.cross_exchange import filter_opportunities
-from telegram_bot import TelegramNotifier
+from notifier.telegram_bot import TelegramNotifier
 import config
 
 
