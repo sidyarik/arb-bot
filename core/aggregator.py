@@ -4,18 +4,25 @@ from scanner.okx import fetch_okx
 from scanner.gate import fetch_gate
 
 
-def collect_all_markets():
-    all_data = []
+def safe_fetch(fetch_func, name):
+    try:
+        return fetch_func()
+    except Exception as e:
+        print(f"{name.upper()} ERROR:", e)
+        return []
 
-    # собираем данные со всех бирж
-    all_data.extend(fetch_binance())
-    all_data.extend(fetch_bybit())
-    all_data.extend(fetch_okx())
-    all_data.extend(fetch_gate())
+
+def collect_all_markets():
+    data = []
+
+    data.extend(safe_fetch(fetch_binance, "binance"))
+    data.extend(safe_fetch(fetch_bybit, "bybit"))
+    data.extend(safe_fetch(fetch_okx, "okx"))
+    data.extend(safe_fetch(fetch_gate, "gate"))
 
     markets = {}
 
-    for item in all_data:
+    for item in data:
         if item.symbol not in markets:
             markets[item.symbol] = {}
 
