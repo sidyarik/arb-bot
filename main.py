@@ -51,8 +51,14 @@ async def main():
     print("🚀 Cross-exchange arb engine started")
 
     # Держим процесс живым
-    await notifier.app.updater.idle()
+    def main():
+    notifier = TelegramNotifier()
+
+    loop = asyncio.get_event_loop()
+    loop.create_task(engine_loop(notifier))
+
+    notifier.run()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
