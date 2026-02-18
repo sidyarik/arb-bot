@@ -1,5 +1,4 @@
 from core.aggregator import collect_all_markets
-from core.market_engine import build_opportunities
 from strategies.cross_exchange import filter_opportunities
 from notifier.telegram_bot import TelegramNotifier
 import config
@@ -13,9 +12,8 @@ async def engine_loop(context):
     try:
         markets = collect_all_markets()
 
-        opportunities = build_opportunities(markets)
-
-        filtered = filter_opportunities(opportunities)
+        # 🔥 теперь filter принимает markets
+        filtered = filter_opportunities(markets)
 
         for opp in filtered:
 
@@ -44,6 +42,7 @@ async def engine_loop(context):
 
             sent_cache.add(key)
 
+        # обновляем память
         current_keys = {
             (op.symbol, op.spot_exchange, op.futures_exchange)
             for op in filtered
@@ -58,10 +57,8 @@ async def engine_loop(context):
 def main():
 
     notifier = TelegramNotifier()
-
     app = notifier.app
 
-    # запускаем engine как повторяющуюся задачу
     app.job_queue.run_repeating(
         engine_loop,
         interval=config.SCAN_INTERVAL_SEC,
