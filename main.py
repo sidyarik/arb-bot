@@ -92,6 +92,9 @@ async def engine_loop(context):
 
 def main():
 
+    print("BINANCE KEY EXISTS:", bool(config.BINANCE_API_KEY))
+    print("BINANCE SECRET EXISTS:", bool(config.BINANCE_SECRET))
+
     notifier = TelegramNotifier()
     app = notifier.app
 
