@@ -1,19 +1,39 @@
 from core.aggregator import collect_all_markets
+from core.market_engine import build_opportunities
 from strategies.cross_exchange import filter_opportunities
 from notifier.telegram_bot import TelegramNotifier
+from borrow.aggregator import collect_borrow_sources
+
 import config
+import time
 
 
 sent_cache = set()
 
+# borrow cache
+borrow_cache = {}
+last_borrow_update = 0
+BORROW_REFRESH_SEC = 600  # 10 минут
+
 
 async def engine_loop(context):
 
+    global borrow_cache, last_borrow_update
+
     try:
+
+        # 🔥 обновляем borrow редко
+        now = time.time()
+        if now - last_borrow_update > BORROW_REFRESH_SEC:
+            print("Updating borrow cache...")
+            borrow_cache = collect_borrow_sources()
+            last_borrow_update = now
+
         markets = collect_all_markets()
 
-        # 🔥 теперь filter принимает markets
-        filtered = filter_opportunities(markets)
+        opportunities = build_opportunities(markets)
+
+        filtered = filter_opportunities(opportunities)
 
         for opp in filtered:
 
@@ -26,13 +46,24 @@ async def engine_loop(context):
             if key in sent_cache:
                 continue
 
+            borrow_sources = borrow_cache.get(opp.symbol, [])
+
+            # если borrow нет — пропускаем
+            if not borrow_sources:
+                continue
+
+            borrow_text = "\n".join(
+                [f"• {x}" for x in borrow_sources]
+            )
+
             message = (
                 f"🚨 CROSS-EXCHANGE OPPORTUNITY\n\n"
                 f"{opp.symbol}\n"
                 f"SELL SPOT: {opp.spot_exchange} @ {opp.spot_price}\n"
                 f"LONG FUTURES: {opp.futures_exchange} @ {opp.futures_price}\n"
                 f"Spread: {opp.spread * 100:.4f}%\n"
-                f"Funding: {opp.funding_rate * 100:.4f}%\n"
+                f"Funding: {opp.funding_rate * 100:.4f}%\n\n"
+                f"Borrow available:\n{borrow_text}"
             )
 
             await context.bot.send_message(
@@ -42,7 +73,6 @@ async def engine_loop(context):
 
             sent_cache.add(key)
 
-        # обновляем память
         current_keys = {
             (op.symbol, op.spot_exchange, op.futures_exchange)
             for op in filtered
@@ -57,6 +87,7 @@ async def engine_loop(context):
 def main():
 
     notifier = TelegramNotifier()
+
     app = notifier.app
 
     app.job_queue.run_repeating(
