@@ -1,5 +1,4 @@
 from core.aggregator import collect_all_markets
-from core.market_engine import build_opportunities
 from strategies.cross_exchange import filter_opportunities
 from notifier.telegram_bot import TelegramNotifier
 from borrow.aggregator import collect_borrow_sources
@@ -29,11 +28,11 @@ async def engine_loop(context):
             borrow_cache = collect_borrow_sources()
             last_borrow_update = now
 
+        # 🔥 собираем рынки
         markets = collect_all_markets()
 
-        opportunities = build_opportunities(markets)
-
-        filtered = filter_opportunities(opportunities)
+        # 🔥 фильтрация (внутри уже build_opportunities)
+        filtered = filter_opportunities(markets)
 
         for opp in filtered:
 
@@ -48,13 +47,10 @@ async def engine_loop(context):
 
             borrow_sources = borrow_cache.get(opp.symbol, [])
 
-            # если borrow нет — пропускаем
-            if not borrow_sources:
-                continue
-
-            borrow_text = "\n".join(
-                [f"• {x}" for x in borrow_sources]
-            )
+            if borrow_sources:
+                borrow_text = "\n".join([f"• {x}" for x in borrow_sources])
+            else:
+                borrow_text = "⚠️ Not found in borrow sources"
 
             message = (
                 f"🚨 CROSS-EXCHANGE OPPORTUNITY\n\n"
@@ -73,6 +69,7 @@ async def engine_loop(context):
 
             sent_cache.add(key)
 
+        # 🔥 очищаем cache если opportunity исчезла
         current_keys = {
             (op.symbol, op.spot_exchange, op.futures_exchange)
             for op in filtered
@@ -87,7 +84,6 @@ async def engine_loop(context):
 def main():
 
     notifier = TelegramNotifier()
-
     app = notifier.app
 
     app.job_queue.run_repeating(

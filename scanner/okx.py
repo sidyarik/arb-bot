@@ -57,7 +57,7 @@ def fetch_okx():
                 funding_rate=funding_rate,
 
                 borrow_rate=None,
-                borrow_available=True
+                borrow_available=False
             )
 
             results.append(market)
