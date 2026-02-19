@@ -51,7 +51,7 @@ def fetch_bybit():
                     funding_rate=float(fut.get("fundingRate", 0)),
 
                     borrow_rate=None,
-                    borrow_available=True
+                    borrow_available=False
                 )
 
                 results.append(market)

@@ -67,7 +67,7 @@ def fetch_gate():
                     funding_rate=float(fut.get("funding_rate", 0)),
 
                     borrow_rate=None,
-                    borrow_available=True,
+                    borrow_available=False,
                 )
 
                 results.append(market)

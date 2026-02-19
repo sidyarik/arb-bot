@@ -43,7 +43,7 @@ def fetch_binance():
             funding_rate=float(funding.get("lastFundingRate", 0)),
 
             borrow_rate=None,
-            borrow_available=True
+            borrow_available=False
         )
 
         results.append(market)
