@@ -28,4 +28,4 @@ FUNDING_THRESHOLD = float(
 )
 
 SCAN_INTERVAL_SEC = int(
-    os.environ.get("SCAN_INTERVAL_SEC", "60")
+    os.environ.get("SCAN_INTERVAL_SEC", "60"))
