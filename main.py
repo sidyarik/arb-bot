@@ -1,3 +1,5 @@
+# main.py
+
 from core.aggregator import collect_all_markets
 from strategies.cross_exchange import filter_opportunities
 from notifier.telegram_bot import TelegramNotifier
@@ -5,14 +7,16 @@ from borrow.aggregator import collect_borrow_sources
 
 import config
 import time
+import asyncio
 
 
 sent_cache = set()
 
-# borrow cache
 borrow_cache = {}
 last_borrow_update = 0
 BORROW_REFRESH_SEC = 600  # 10 минут
+
+MAX_ALERTS_PER_CYCLE = 5   # 🔥 анти-флуд лимит
 
 
 async def engine_loop(context):
@@ -21,20 +25,21 @@ async def engine_loop(context):
 
     try:
 
-        # 🔥 обновляем borrow редко
         now = time.time()
         if now - last_borrow_update > BORROW_REFRESH_SEC:
             print("Updating borrow cache...")
             borrow_cache = collect_borrow_sources()
             last_borrow_update = now
 
-        # 🔥 собираем рынки
         markets = collect_all_markets()
-
-        # 🔥 фильтрация (внутри уже build_opportunities)
         filtered = filter_opportunities(markets)
 
+        sent_count = 0
+
         for opp in filtered:
+
+            if sent_count >= MAX_ALERTS_PER_CYCLE:
+                break
 
             key = (
                 opp.symbol,
@@ -68,8 +73,11 @@ async def engine_loop(context):
             )
 
             sent_cache.add(key)
+            sent_count += 1
 
-        # 🔥 очищаем cache если opportunity исчезла
+            # 🔥 анти flood
+            await asyncio.sleep(0.3)
+
         current_keys = {
             (op.symbol, op.spot_exchange, op.futures_exchange)
             for op in filtered
