@@ -1,6 +1,7 @@
 # strategies/cross_exchange.py
 
 from core.market_engine import build_opportunities
+from borrow.aggregator import collect_borrow_sources
 import config
 
 
@@ -12,20 +13,9 @@ def filter_opportunities(markets: dict):
     print(f"[ENGINE] Markets symbols: {len(markets)}")
     print(f"[ENGINE] Raw opportunities: {len(raw_opportunities)}")
 
-    # 🔥 BORROW LOGIC FIX
-    # token borrowable only if ANY exchange says True
-    borrowable_symbols = set()
-
-    for symbol, exchanges in markets.items():
-
-        # ЖЁСТКАЯ проверка
-        has_real_borrow = any(
-            data.borrow_available is True
-            for data in exchanges.values()
-        )
-
-        if has_real_borrow:
-            borrowable_symbols.add(symbol)
+    # 🔥 берём borrow из cache-логики
+    borrow_cache = collect_borrow_sources()
+    borrowable_symbols = set(borrow_cache.keys())
 
     print(f"[ENGINE] Borrowable symbols: {len(borrowable_symbols)}")
 
