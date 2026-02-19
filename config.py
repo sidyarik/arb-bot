@@ -7,9 +7,8 @@ import os
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = int(os.environ.get("TELEGRAM_CHAT_ID", "0"))
 
-
 # ==============================
-# API KEYS (по мере добавления)
+# API KEYS
 # ==============================
 
 BINANCE_API_KEY = os.environ.get("BINANCE_API_KEY")
@@ -24,17 +23,19 @@ OKX_SECRET = os.environ.get("OKX_SECRET")
 GATE_API_KEY = os.environ.get("GATE_API_KEY")
 GATE_SECRET = os.environ.get("GATE_SECRET")
 
-
 # ==============================
 # STRATEGY SETTINGS
 # ==============================
 
-# Минимальный спред между биржами (в процентах)
-MIN_SPREAD_PERCENT = float(os.environ.get("MIN_SPREAD_PERCENT", "0.005"))
+MIN_SPREAD_PERCENT = float(
+    os.environ.get("MIN_SPREAD_PERCENT", "0.005")
+)
 
-# Минимальный отрицательный funding (в процентах)
-# Например 0.05 = 0.05%
-FUNDING_THRESHOLD = float(os.environ.get("FUNDING_THRESHOLD", "0.0005"))
+FUNDING_THRESHOLD = float(
+    os.environ.get("FUNDING_THRESHOLD", "0.0005")
+)
 
-# Интервал сканирования
-SCAN_INTERVAL_SEC = int(os.environ.get("SCAN_INTERVAL_SEC", "10"))
+# 🔥 ВАЖНО — не перегружаем loop
+SCAN_INTERVAL_SEC = int(
+    os.environ.get("SCAN_INTERVAL_SEC", "60")
+)
