@@ -1,3 +1,5 @@
+# strategies/cross_exchange.py
+
 from core.market_engine import build_opportunities
 import config
 
@@ -9,7 +11,10 @@ def filter_opportunities(markets: dict):
     raw_opportunities = build_opportunities(markets)
     filtered = []
 
-    # 🔹 Определяем какие токены вообще можно взять в займ
+    print(f"[ENGINE] Markets symbols: {len(markets)}")
+    print(f"[ENGINE] Raw opportunities: {len(raw_opportunities)}")
+
+    # 🔹 определяем borrowable symbols
     borrowable_symbols = set()
 
     for symbol, exchanges in markets.items():
@@ -18,20 +23,26 @@ def filter_opportunities(markets: dict):
                 borrowable_symbols.add(symbol)
                 break
 
+    print(f"[ENGINE] Borrowable symbols: {len(borrowable_symbols)}")
+
     for op in raw_opportunities:
 
-        # 1️⃣ Если токен нигде нельзя взять в займ — пропускаем
+        # 1️⃣ token должен быть borrowable
         if op.symbol not in borrowable_symbols:
             continue
 
-        # 2️⃣ Проверка спреда
+        # 2️⃣ spread check
         has_spread = op.spread >= config.MIN_SPREAD_PERCENT
 
-        # 3️⃣ Проверка отрицательного funding
-        has_negative_funding = op.funding_rate <= -config.FUNDING_THRESHOLD
+        # 3️⃣ funding check
+        has_negative_funding = (
+            op.funding_rate <= -config.FUNDING_THRESHOLD
+        )
 
-        # 4️⃣ Финальная логика
+        # 4️⃣ final logic
         if has_spread or has_negative_funding:
             filtered.append(op)
+
+    print(f"[ENGINE] Filtered opportunities: {len(filtered)}")
 
     return filtered
