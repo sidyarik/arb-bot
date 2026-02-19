@@ -1,12 +1,15 @@
-# borrow/aggregator.py
+from borrow.binance_margin import fetch_binance_margin
 
-# ВРЕМЕННАЯ ЗАГЛУШКА (потом заменим на реальные API)
 
 def collect_borrow_sources():
 
-    # symbol -> список мест где можно взять токен
-    return {
-        "BTCUSDT": ["Binance Margin"],
-        "ETHUSDT": ["Binance Margin", "Bybit Loans"],
-        "BNBUSDT": ["Binance Margin"],
-    }
+    result = {}
+
+    binance_assets = fetch_binance_margin()
+
+    for symbol in binance_assets:
+        result[symbol] = ["Binance Margin"]
+
+    print(f"[BORROW] Total borrowable: {len(result)}")
+
+    return result
