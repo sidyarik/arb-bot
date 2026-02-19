@@ -18,6 +18,7 @@ BORROW_REFRESH_SEC = 600  # 10 минут
 
 MAX_ALERTS_PER_CYCLE = 5   # 🔥 анти-флуд лимит
 
+#ddddd
 
 async def engine_loop(context):
 
