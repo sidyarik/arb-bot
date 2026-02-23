@@ -1,21 +1,64 @@
 import requests
+import time
+import hmac
+import hashlib
+import config
 
 
 BYBIT_LOANS_URL = "https://api.bybit.com/v5/spot-margin-trade/loan-info"
 
 
+def sign(params: str, secret: str) -> str:
+    return hmac.new(
+        secret.encode(),
+        params.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+
 def fetch_bybit_loans():
 
+    if not config.BYBIT_API_KEY or not config.BYBIT_SECRET:
+        print("[BORROW] Bybit loans API keys missing")
+        return {}
+
     try:
-        r = requests.get(BYBIT_LOANS_URL, timeout=10)
+
+        timestamp = str(int(time.time() * 1000))
+        recv_window = "5000"
+
+        query = ""
+
+        param_str = (
+            timestamp +
+            config.BYBIT_API_KEY +
+            recv_window +
+            query
+        )
+
+        signature = sign(param_str, config.BYBIT_SECRET)
+
+        headers = {
+            "X-BAPI-API-KEY": config.BYBIT_API_KEY,
+            "X-BAPI-SIGN": signature,
+            "X-BAPI-SIGN-TYPE": "2",
+            "X-BAPI-TIMESTAMP": timestamp,
+            "X-BAPI-RECV-WINDOW": recv_window,
+        }
+
+        r = requests.get(
+            BYBIT_LOANS_URL,
+            headers=headers,
+            timeout=10
+        )
+
         data = r.json()
 
         if data.get("retCode") != 0:
-            print("[BORROW] Bybit loans unexpected:", data)
+            print("[BORROW] Bybit loans error:", data)
             return {}
 
-        result = data.get("result", {})
-        items = result.get("list", [])
+        items = data.get("result", {}).get("list", [])
 
         loans = {}
 
@@ -28,13 +71,9 @@ def fetch_bybit_loans():
 
             symbol = f"{coin}USDT"
 
-            # APR
-            borrow_rate = item.get("hourlyBorrowRate", "0")
-            available = item.get("maxBorrowingAmount", "0")
-
             loans[symbol] = {
-                "rate": borrow_rate,
-                "available": available
+                "rate": item.get("hourlyBorrowRate", "0"),
+                "available": item.get("maxBorrowingAmount", "0")
             }
 
         print(f"[BORROW] Bybit loans: {len(loans)} assets")
@@ -42,5 +81,5 @@ def fetch_bybit_loans():
         return loans
 
     except Exception as e:
-        print("[BORROW] Bybit loans error:", e)
+        print("[BORROW] Bybit loans exception:", e)
         return {}

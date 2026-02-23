@@ -22,17 +22,15 @@ def collect_borrow_sources():
     for symbol in gate_assets:
         result.setdefault(symbol, []).append("Gate Proxy")
 
-    # 🔥 Bybit Loans (real data)
+    # Bybit loans (real data)
     loans = fetch_bybit_loans()
 
     for symbol, info in loans.items():
-
         text = (
             f"Bybit Loan "
-            f"(APR≈{info['rate']}/h, "
+            f"(rate={info['rate']}, "
             f"avail={info['available']})"
         )
-
         result.setdefault(symbol, []).append(text)
 
     print(f"[BORROW] Total borrowable: {len(result)}")
