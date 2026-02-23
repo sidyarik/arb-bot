@@ -1,7 +1,24 @@
+# borrow/aggregator.py
+
 from borrow.binance_static import BINANCE_STATIC_BORROW
 from borrow.bybit_margin import fetch_bybit_margin
 from borrow.gate_margin import fetch_gate_margin
 from borrow.bybit_loans import fetch_bybit_loans
+
+
+def hourly_to_apr(hourly_rate: str) -> float:
+    try:
+        r = float(hourly_rate)
+        return r * 24 * 365 * 100
+    except:
+        return 0.0
+
+
+def format_number(x):
+    try:
+        return f"{float(x):,.0f}"
+    except:
+        return str(x)
 
 
 def collect_borrow_sources():
@@ -22,15 +39,20 @@ def collect_borrow_sources():
     for symbol in gate_assets:
         result.setdefault(symbol, []).append("Gate Proxy")
 
-    # Bybit loans (real data)
+    # Bybit loans (real)
     loans = fetch_bybit_loans()
 
     for symbol, info in loans.items():
+
+        apr = hourly_to_apr(info["rate"])
+        available = format_number(info["available"])
+
         text = (
-            f"Bybit Loan "
-            f"(rate={info['rate']}, "
-            f"avail={info['available']})"
+            "Bybit Loan\n"
+            f"• APR: {apr:.2f}%\n"
+            f"• Available: {available}"
         )
+
         result.setdefault(symbol, []).append(text)
 
     print(f"[BORROW] Total borrowable: {len(result)}")
