@@ -1,5 +1,6 @@
 import requests
 
+print("🔥 NEW BINANCE MARGIN FILE LOADED")
 
 BINANCE_MARGIN_PAIRS_URL = "https://api.binance.com/sapi/v1/margin/allPairs"
 
@@ -7,7 +8,14 @@ BINANCE_MARGIN_PAIRS_URL = "https://api.binance.com/sapi/v1/margin/allPairs"
 def fetch_binance_margin():
 
     try:
-        r = requests.get(BINANCE_MARGIN_PAIRS_URL, timeout=10)
+        # ❗ НИКАКИХ headers
+        # ❗ НИКАКИХ api keys
+
+        r = requests.get(
+            BINANCE_MARGIN_PAIRS_URL,
+            timeout=10
+        )
+
         data = r.json()
 
         if not isinstance(data, list):
@@ -18,7 +26,6 @@ def fetch_binance_margin():
 
         for item in data:
 
-            # margin trading enabled
             if not item.get("isMarginTrade"):
                 continue
 
@@ -27,7 +34,6 @@ def fetch_binance_margin():
             if not symbol:
                 continue
 
-            # только USDT пары
             if not symbol.endswith("USDT"):
                 continue
 
