@@ -1,14 +1,13 @@
-from borrow.binance_margin import fetch_binance_margin
+from borrow.binance_static import BINANCE_STATIC_BORROW
 
 
 def collect_borrow_sources():
 
     result = {}
 
-    binance_assets = fetch_binance_margin()
-
-    for symbol in binance_assets:
-        result[symbol] = ["Binance Margin (proxy)"]
+    # 🔥 Binance static list
+    for symbol in BINANCE_STATIC_BORROW:
+        result.setdefault(symbol, []).append("Binance Static")
 
     print(f"[BORROW] Total borrowable: {len(result)}")
 
