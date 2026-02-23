@@ -8,7 +8,7 @@ def collect_borrow_sources():
     binance_assets = fetch_binance_margin()
 
     for symbol in binance_assets:
-        result[symbol] = ["Binance Margin"]
+        result[symbol] = ["Binance Margin (proxy)"]
 
     print(f"[BORROW] Total borrowable: {len(result)}")
 
