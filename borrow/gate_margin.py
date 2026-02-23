@@ -23,19 +23,18 @@ def fetch_gate_margin():
             if not symbol:
                 continue
 
-            # Gate формат BTC_USDT
+            # формат BTC_USDT
             if not symbol.endswith("_USDT"):
                 continue
 
-            # margin support
-            if not item.get("trade_status") == "tradable":
+            # только активные пары
+            if item.get("trade_status") != "tradable":
                 continue
 
-            # 🔥 margin enabled flag
-            if not item.get("margin_trading"):
+            # 🔥 правильный ключ
+            if not item.get("margin", False):
                 continue
 
-            # переводим в твой формат BTCUSDT
             normalized = symbol.replace("_", "")
             borrowable.add(normalized)
 
