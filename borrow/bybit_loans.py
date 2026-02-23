@@ -1,5 +1,3 @@
-# borrow/bybit_loans.py
-
 import requests
 import time
 import hmac
@@ -55,14 +53,37 @@ def fetch_bybit_loans():
 
         data = r.json()
 
-        print("[BORROW] Bybit loans RAW:", data)
-
         if data.get("retCode") != 0:
             print("[BORROW] Bybit loans error:", data)
             return {}
 
-        # временно
-        return {}
+        loans = {}
+
+        vip_list = data.get("result", {}).get("vipCoinList", [])
+
+        for vip in vip_list:
+
+            coins = vip.get("list", [])
+
+            for item in coins:
+
+                if not item.get("borrowable"):
+                    continue
+
+                coin = item.get("currency")
+                if not coin:
+                    continue
+
+                symbol = f"{coin}USDT"
+
+                loans[symbol] = {
+                    "rate": item.get("hourlyBorrowRate", "0"),
+                    "available": item.get("maxBorrowingAmount", "0")
+                }
+
+        print(f"[BORROW] Bybit loans: {len(loans)} assets")
+
+        return loans
 
     except Exception as e:
         print("[BORROW] Bybit loans exception:", e)
