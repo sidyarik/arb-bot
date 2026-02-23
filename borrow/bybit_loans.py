@@ -8,10 +8,10 @@ import config
 BYBIT_LOANS_URL = "https://api.bybit.com/v5/spot-margin-trade/loan-info"
 
 
-def sign(params: str, secret: str) -> str:
+def sign(payload: str, secret: str) -> str:
     return hmac.new(
         secret.encode(),
-        params.encode(),
+        payload.encode(),
         hashlib.sha256
     ).hexdigest()
 
@@ -19,24 +19,23 @@ def sign(params: str, secret: str) -> str:
 def fetch_bybit_loans():
 
     if not config.BYBIT_API_KEY or not config.BYBIT_SECRET:
-        print("[BORROW] Bybit loans API keys missing")
+        print("[BORROW] Bybit loans: API keys missing")
         return {}
 
     try:
 
         timestamp = str(int(time.time() * 1000))
         recv_window = "5000"
+        query_string = ""
 
-        query = ""
-
-        param_str = (
-            timestamp +
-            config.BYBIT_API_KEY +
-            recv_window +
-            query
+        payload = (
+            timestamp
+            + config.BYBIT_API_KEY
+            + recv_window
+            + query_string
         )
 
-        signature = sign(param_str, config.BYBIT_SECRET)
+        signature = sign(payload, config.BYBIT_SECRET)
 
         headers = {
             "X-BAPI-API-KEY": config.BYBIT_API_KEY,
@@ -52,6 +51,10 @@ def fetch_bybit_loans():
             timeout=10
         )
 
+        # DEBUG — покажет реальный ответ
+        print("[BORROW] Bybit loans status:", r.status_code)
+        print("[BORROW] Bybit loans raw:", r.text[:300])
+
         data = r.json()
 
         if data.get("retCode") != 0:
@@ -65,7 +68,6 @@ def fetch_bybit_loans():
         for item in items:
 
             coin = item.get("coin")
-
             if not coin:
                 continue
 
