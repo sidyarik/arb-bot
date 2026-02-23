@@ -1,3 +1,5 @@
+# borrow/bybit_loans.py
+
 import requests
 import time
 import hmac
@@ -5,7 +7,7 @@ import hashlib
 import config
 
 
-BYBIT_LOANS_URL = "https://api.bybit.com/v5/spot-margin-trade/loan-info"
+BYBIT_LOANS_URL = "https://api.bybit.com/v5/spot-margin-trade/data"
 
 
 def sign(payload: str, secret: str) -> str:
@@ -51,9 +53,7 @@ def fetch_bybit_loans():
             timeout=10
         )
 
-        # DEBUG — покажет реальный ответ
         print("[BORROW] Bybit loans status:", r.status_code)
-        print("[BORROW] Bybit loans raw:", r.text[:300])
 
         data = r.json()
 
