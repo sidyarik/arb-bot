@@ -14,6 +14,9 @@ def fetch_gate_margin():
             print("[BORROW] Gate unexpected response:", data)
             return set()
 
+        # 🔥 ПЕЧАТАЕМ ПЕРВЫЙ ЭЛЕМЕНТ
+        print("[BORROW] Gate sample:", data[0])
+
         borrowable = set()
 
         for item in data:
@@ -23,24 +26,19 @@ def fetch_gate_margin():
             if not symbol:
                 continue
 
-            # формат BTC_USDT
             if not symbol.endswith("_USDT"):
                 continue
 
-            # только активные пары
+            # пока без margin фильтра
             if item.get("trade_status") != "tradable":
-                continue
-
-            # 🔥 правильный ключ
-            if not item.get("margin", False):
                 continue
 
             normalized = symbol.replace("_", "")
             borrowable.add(normalized)
 
-        print(f"[BORROW] Gate margin pairs: {len(borrowable)} assets")
+        print(f"[BORROW] Gate pairs (debug): {len(borrowable)} assets")
 
-        return borrowable
+        return set()  # 🔥 пока ничего не добавляем
 
     except Exception as e:
         print("[BORROW] Gate error:", e)
