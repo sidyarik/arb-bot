@@ -49,8 +49,8 @@ def collect_borrow_sources():
 
         text = (
             "Bybit Loan\n"
-            f"• APR: {apr:.2f}%\n"
-            f"• Available: {available}"
+            f"APR: {apr:.2f}%\n"
+            f"Available: {available}"
         )
 
         result.setdefault(symbol, []).append(text)

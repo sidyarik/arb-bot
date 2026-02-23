@@ -16,3 +16,7 @@ class MarketData:
 
     borrow_rate: float | None
     borrow_available: bool
+
+    # transfer status
+    deposit_enabled: bool = True
+    withdraw_enabled: bool = True
