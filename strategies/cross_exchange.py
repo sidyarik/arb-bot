@@ -5,31 +5,37 @@ from core.market_engine import build_opportunities
 PURE_SPREAD_THRESHOLD = 0.03  # 3%
 
 
-def classify_opportunity(op):
+def has_bybit_loan(op):
+    # проверяем borrow текст если есть loan
+    return any("Bybit Loan" in str(x) for x in getattr(op, "borrow_sources", []))
 
-    spread_ok = op.spread >= config.MIN_SPREAD_PERCENT
-    funding_ok = op.funding_rate <= -config.FUNDING_THRESHOLD
+
+def classify_opportunity(op, borrow_sources):
+
+    spread = op.spread
+    funding = op.funding_rate
+
+    spread_ok = spread >= config.MIN_SPREAD_PERCENT
+    funding_negative = funding <= -config.FUNDING_THRESHOLD
     pure_spread_big = (
-        op.spread >= PURE_SPREAD_THRESHOLD
-        and abs(op.funding_rate) < config.FUNDING_THRESHOLD
+        spread >= PURE_SPREAD_THRESHOLD
+        and funding > -config.FUNDING_THRESHOLD
     )
 
+    # TIER S — только большой чистый спред
     if pure_spread_big:
         return "TIER S — PURE SPREAD 3%+"
 
-    if spread_ok and funding_ok:
-        return "TIER A — SPREAD + FUNDING"
-
-    if funding_ok:
-        return "TIER B — FUNDING"
-
-    if spread_ok:
-        return "TIER C — SPREAD"
+    # TIER A — spread + negative funding + bybit loan
+    if spread_ok and funding_negative:
+        if any("Bybit Loan" in s for s in borrow_sources):
+            return "TIER A — SPREAD + FUNDING + LOAN"
+        return "TIER B — SPREAD + FUNDING"
 
     return None
 
 
-def filter_opportunities(markets: dict):
+def filter_opportunities(markets: dict, borrow_cache: dict):
 
     raw_opportunities = build_opportunities(markets)
     filtered = []
@@ -47,12 +53,16 @@ def filter_opportunities(markets: dict):
         if op.symbol not in borrowable_symbols:
             continue
 
-        tier = classify_opportunity(op)
+        borrow_sources = borrow_cache.get(op.symbol, [])
+
+        tier = classify_opportunity(op, borrow_sources)
 
         if not tier:
             continue
 
         op.tier_name = tier
+        op.borrow_sources = borrow_sources
+
         filtered.append(op)
 
     return filtered
