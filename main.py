@@ -12,7 +12,7 @@ sent_cache = set()
 
 borrow_cache = {}
 last_borrow_update = 0
-BORROW_REFRESH_SEC = 600  # 10 минут
+BORROW_REFRESH_SEC = 600
 
 MAX_ALERTS_PER_CYCLE = 5
 
@@ -30,7 +30,9 @@ async def engine_loop(context):
             last_borrow_update = now
 
         markets = collect_all_markets()
-        filtered = filter_opportunities(markets)
+
+        # 🔥 ВАЖНО — передаём borrow_cache
+        filtered = filter_opportunities(markets, borrow_cache)
 
         sent_count = 0
 
@@ -59,19 +61,18 @@ async def engine_loop(context):
             w_icon = "🟢 V" if getattr(opp, "withdraw_enabled", True) else "🔴 V"
 
             funding_interval = getattr(opp, "funding_interval_hours", 8)
-
             tier = getattr(opp, "tier_name", "UNKNOWN")
 
             message = (
                 f"🚨 {tier}\n\n"
-    f"{opp.symbol}\n"
-    f"SELL SPOT: {opp.spot_exchange} @ {opp.spot_price}\n"
-    f"LONG FUTURES: {opp.futures_exchange} @ {opp.futures_price}\n"
-    f"Spread: {opp.spread * 100:.4f}%\n"
-    f"Funding: {opp.funding_rate * 100:.4f}% "
-    f"(every {funding_interval}h)\n"
-    f"Transfer: {d_icon}  {w_icon}\n\n"
-    f"Borrow available:\n{borrow_text}"
+                f"{opp.symbol}\n"
+                f"SELL SPOT: {opp.spot_exchange} @ {opp.spot_price}\n"
+                f"LONG FUTURES: {opp.futures_exchange} @ {opp.futures_price}\n"
+                f"Spread: {opp.spread * 100:.4f}%\n"
+                f"Funding: {opp.funding_rate * 100:.4f}% "
+                f"(every {funding_interval}h)\n"
+                f"Transfer: {d_icon}  {w_icon}\n\n"
+                f"Borrow available:\n{borrow_text}"
             )
 
             await context.bot.send_message(
@@ -96,9 +97,6 @@ async def engine_loop(context):
 
 
 def main():
-
-    print("BINANCE KEY EXISTS:", bool(config.BINANCE_API_KEY))
-    print("BINANCE SECRET EXISTS:", bool(config.BINANCE_SECRET))
 
     notifier = TelegramNotifier()
     app = notifier.app
