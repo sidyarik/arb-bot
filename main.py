@@ -55,9 +55,10 @@ async def engine_loop(context):
             else:
                 borrow_text = "⚠️ Not found in borrow sources"
 
-            # transfer status (пока default=True)
             d_icon = "🟢 D" if getattr(opp, "deposit_enabled", True) else "🔴 D"
             w_icon = "🟢 V" if getattr(opp, "withdraw_enabled", True) else "🔴 V"
+
+            funding_interval = getattr(opp, "funding_interval_hours", 8)
 
             message = (
                 f"🚨 CROSS-EXCHANGE OPPORTUNITY\n\n"
@@ -65,7 +66,8 @@ async def engine_loop(context):
                 f"SELL SPOT: {opp.spot_exchange} @ {opp.spot_price}\n"
                 f"LONG FUTURES: {opp.futures_exchange} @ {opp.futures_price}\n"
                 f"Spread: {opp.spread * 100:.4f}%\n"
-                f"Funding: {opp.funding_rate * 100:.4f}%\n"
+                f"Funding: {opp.funding_rate * 100:.4f}% "
+                f"(every {funding_interval}h)\n"
                 f"Transfer: {d_icon}  {w_icon}\n\n"
                 f"Borrow available:\n{borrow_text}"
             )
@@ -78,7 +80,6 @@ async def engine_loop(context):
             sent_cache.add(key)
             sent_count += 1
 
-            # анти flood
             await asyncio.sleep(0.3)
 
         current_keys = {
