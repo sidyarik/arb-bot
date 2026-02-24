@@ -1,5 +1,6 @@
 import requests
 from core.models import MarketData
+from scanner.binance_transfer import fetch_binance_transfer_status
 
 
 BINANCE_SPOT_URL = "https://api.binance.com/api/v3/ticker/bookTicker"
@@ -16,6 +17,8 @@ def fetch_binance():
     funding_map = {item["symbol"]: item for item in funding_data}
 
     results = []
+
+    transfer_map = fetch_binance_transfer_status()
 
     for spot in spot_data:
 
@@ -44,6 +47,9 @@ def fetch_binance():
 
             borrow_rate=None,
             borrow_available=False
+
+            deposit_enabled=transfer.get("deposit", True),
+            withdraw_enabled=transfer.get("withdraw", True)
         )
 
         results.append(market)
