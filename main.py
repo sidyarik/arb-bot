@@ -31,12 +31,12 @@ async def engine_loop(context):
 
         markets = collect_all_markets()
 
-        # 🔥 ВАЖНО — передаём borrow_cache
-        filtered = filter_opportunities(markets, borrow_cache)
+        # оставляем старую сигнатуру
+        raw_ops = filter_opportunities(markets)
 
         sent_count = 0
 
-        for opp in filtered:
+        for opp in raw_ops:
 
             if sent_count >= MAX_ALERTS_PER_CYCLE:
                 break
@@ -52,6 +52,34 @@ async def engine_loop(context):
 
             borrow_sources = borrow_cache.get(opp.symbol, [])
 
+            spread = opp.spread
+            funding = opp.funding_rate
+
+            spread_ok = spread >= config.MIN_SPREAD_PERCENT
+            funding_negative = funding <= -config.FUNDING_THRESHOLD
+
+            pure_spread_big = (
+                spread >= 0.03
+                and funding > -config.FUNDING_THRESHOLD
+            )
+
+            tier = None
+
+            # TIER S — только чистый 3%+
+            if pure_spread_big:
+                tier = "TIER S — PURE SPREAD 3%+"
+
+            # TIER A / B — spread + negative funding
+            elif spread_ok and funding_negative:
+                if any("Bybit Loan" in s for s in borrow_sources):
+                    tier = "TIER A — SPREAD + FUNDING + LOAN"
+                else:
+                    tier = "TIER B — SPREAD + FUNDING"
+
+            # если не подходит — не отправляем
+            if not tier:
+                continue
+
             if borrow_sources:
                 borrow_text = "\n".join([f"• {x}" for x in borrow_sources])
             else:
@@ -61,15 +89,14 @@ async def engine_loop(context):
             w_icon = "🟢 V" if getattr(opp, "withdraw_enabled", True) else "🔴 V"
 
             funding_interval = getattr(opp, "funding_interval_hours", 8)
-            tier = getattr(opp, "tier_name", "UNKNOWN")
 
             message = (
                 f"🚨 {tier}\n\n"
                 f"{opp.symbol}\n"
                 f"SELL SPOT: {opp.spot_exchange} @ {opp.spot_price}\n"
                 f"LONG FUTURES: {opp.futures_exchange} @ {opp.futures_price}\n"
-                f"Spread: {opp.spread * 100:.4f}%\n"
-                f"Funding: {opp.funding_rate * 100:.4f}% "
+                f"Spread: {spread * 100:.4f}%\n"
+                f"Funding: {funding * 100:.4f}% "
                 f"(every {funding_interval}h)\n"
                 f"Transfer: {d_icon}  {w_icon}\n\n"
                 f"Borrow available:\n{borrow_text}"
@@ -87,7 +114,7 @@ async def engine_loop(context):
 
         current_keys = {
             (op.symbol, op.spot_exchange, op.futures_exchange)
-            for op in filtered
+            for op in raw_ops
         }
 
         sent_cache.intersection_update(current_keys)
