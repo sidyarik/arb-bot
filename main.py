@@ -30,8 +30,6 @@ async def engine_loop(context):
             last_borrow_update = now
 
         markets = collect_all_markets()
-
-        # оставляем старую сигнатуру
         raw_ops = filter_opportunities(markets)
 
         sent_count = 0
@@ -57,26 +55,21 @@ async def engine_loop(context):
 
             spread_ok = spread >= config.MIN_SPREAD_PERCENT
             funding_negative = funding <= -config.FUNDING_THRESHOLD
-
-            pure_spread_big = (
-                spread >= 0.03
-                and funding > -config.FUNDING_THRESHOLD
-            )
+            spread_big = spread >= 0.03
 
             tier = None
 
-            # TIER S — только чистый 3%+
-            if pure_spread_big:
-                tier = "TIER S — PURE SPREAD 3%+"
-
-            # TIER A / B — spread + negative funding
-            elif spread_ok and funding_negative:
+            # 🔥 Funding всегда приоритетнее спреда
+            if spread_ok and funding_negative:
                 if any("Bybit Loan" in s for s in borrow_sources):
                     tier = "TIER A — SPREAD + FUNDING + LOAN"
                 else:
                     tier = "TIER B — SPREAD + FUNDING"
 
-            # если не подходит — не отправляем
+            # Чистый большой спред (если funding НЕ отрицательный)
+            elif spread_big and funding > -config.FUNDING_THRESHOLD:
+                tier = "TIER S — PURE SPREAD 3%+"
+
             if not tier:
                 continue
 
@@ -98,7 +91,6 @@ async def engine_loop(context):
                 f"Spread: {spread * 100:.4f}%\n"
                 f"Funding: {funding * 100:.4f}% "
                 f"(every {funding_interval}h)\n"
-                f"Transfer: {d_icon}  {w_icon}\n\n"
                 f"Borrow available:\n{borrow_text}"
             )
 

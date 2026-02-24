@@ -19,7 +19,7 @@ def classify_opportunity(op, borrow_sources):
 
     # TIER S — чистый спред 3%+
     if pure_spread_big:
-        return "TIER S — PURE SPREAD 3%+"
+        return "PURE SPREAD 3%+"
 
     # Spread + negative funding
     if spread_ok and funding_negative:
