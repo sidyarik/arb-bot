@@ -13,10 +13,10 @@ class MarketData:
     futures_ask: float
 
     funding_rate: float
+    funding_interval_hours: int = 8
 
-    borrow_rate: float | None
-    borrow_available: bool
+    borrow_rate: float | None = None
+    borrow_available: bool = False
 
-    # transfer status
     deposit_enabled: bool = True
     withdraw_enabled: bool = True
