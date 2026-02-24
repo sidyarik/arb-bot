@@ -9,16 +9,18 @@ BINANCE_FUNDING_URL = "https://fapi.binance.com/fapi/v1/premiumIndex"
 
 
 def fetch_binance():
+
     spot_data = requests.get(BINANCE_SPOT_URL, timeout=10).json()
     futures_data = requests.get(BINANCE_FUTURES_URL, timeout=10).json()
     funding_data = requests.get(BINANCE_FUNDING_URL, timeout=10).json()
+
+    # transfer status (NEW)
+    transfer_map = fetch_binance_transfer_status()
 
     futures_map = {item["symbol"]: item for item in futures_data}
     funding_map = {item["symbol"]: item for item in funding_data}
 
     results = []
-
-    transfer_map = fetch_binance_transfer_status()
 
     for spot in spot_data:
 
@@ -33,6 +35,9 @@ def fetch_binance():
         fut = futures_map[symbol]
         funding = funding_map.get(symbol, {})
 
+        # IMPORTANT — внутри цикла
+        transfer = transfer_map.get(symbol, {})
+
         market = MarketData(
             exchange="binance",
             symbol=symbol,
@@ -46,7 +51,7 @@ def fetch_binance():
             funding_rate=float(funding.get("lastFundingRate", 0)),
 
             borrow_rate=None,
-            borrow_available=False,
+            borrow_available=True,
 
             deposit_enabled=transfer.get("deposit", True),
             withdraw_enabled=transfer.get("withdraw", True)
