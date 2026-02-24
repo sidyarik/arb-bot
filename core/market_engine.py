@@ -13,6 +13,7 @@ class Opportunity:
         spread: float,
         funding_rate: float,
         borrow_available: bool,
+        funding_interval_hours: float | None = None,  # 👈 добавили
     ):
         self.symbol = symbol
         self.spot_exchange = spot_exchange
@@ -22,6 +23,7 @@ class Opportunity:
         self.spread = spread
         self.funding_rate = funding_rate
         self.borrow_available = borrow_available
+        self.funding_interval_hours = funding_interval_hours  # 👈 сохраняем
 
 
 def calculate_spread(spot_price: float, futures_price: float) -> float:
@@ -33,7 +35,7 @@ def calculate_spread(spot_price: float, futures_price: float) -> float:
 def build_opportunities(markets: dict):
 
     print("DEBUG TYPE:", type(markets))
-    
+
     opportunities = []
 
     for symbol, exchanges in markets.items():
@@ -55,6 +57,7 @@ def build_opportunities(markets: dict):
                     spread=spread,
                     funding_rate=data.funding_rate,
                     borrow_available=data.borrow_available,
+                    funding_interval_hours=getattr(data, "funding_interval_hours", None),
                 )
             )
 
@@ -74,6 +77,7 @@ def build_opportunities(markets: dict):
                     spread=spread_1,
                     funding_rate=data2.funding_rate,
                     borrow_available=data1.borrow_available,
+                    funding_interval_hours=getattr(data2, "funding_interval_hours", None),
                 )
             )
 
@@ -90,6 +94,7 @@ def build_opportunities(markets: dict):
                     spread=spread_2,
                     funding_rate=data1.funding_rate,
                     borrow_available=data2.borrow_available,
+                    funding_interval_hours=getattr(data1, "funding_interval_hours", None),
                 )
             )
 
