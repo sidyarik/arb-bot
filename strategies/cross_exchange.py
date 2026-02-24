@@ -1,3 +1,7 @@
+import config
+from core.market_engine import build_opportunities
+
+
 PURE_SPREAD_THRESHOLD = 0.03  # 3%
 
 
@@ -5,9 +9,11 @@ def classify_opportunity(op):
 
     spread_ok = op.spread >= config.MIN_SPREAD_PERCENT
     funding_ok = op.funding_rate <= -config.FUNDING_THRESHOLD
-    pure_spread_big = op.spread >= PURE_SPREAD_THRESHOLD and abs(op.funding_rate) < config.FUNDING_THRESHOLD
+    pure_spread_big = (
+        op.spread >= PURE_SPREAD_THRESHOLD
+        and abs(op.funding_rate) < config.FUNDING_THRESHOLD
+    )
 
-    # ТИРЫ
     if pure_spread_big:
         return "TIER S — PURE SPREAD 3%+"
 
@@ -46,7 +52,7 @@ def filter_opportunities(markets: dict):
         if not tier:
             continue
 
-        op.tier_name = tier  # добавляем динамически
+        op.tier_name = tier
         filtered.append(op)
 
     return filtered
