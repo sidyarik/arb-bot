@@ -46,7 +46,7 @@ def fetch_binance():
             funding_rate=float(funding.get("lastFundingRate", 0)),
 
             borrow_rate=None,
-            borrow_available=False
+            borrow_available=False,
 
             deposit_enabled=transfer.get("deposit", True),
             withdraw_enabled=transfer.get("withdraw", True)
