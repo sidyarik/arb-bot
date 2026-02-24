@@ -60,16 +60,18 @@ async def engine_loop(context):
 
             funding_interval = getattr(opp, "funding_interval_hours", 8)
 
+            tier = getattr(opp, "tier_name", "UNKNOWN")
+
             message = (
-                f"🚨 CROSS-EXCHANGE OPPORTUNITY\n\n"
-                f"{opp.symbol}\n"
-                f"SELL SPOT: {opp.spot_exchange} @ {opp.spot_price}\n"
-                f"LONG FUTURES: {opp.futures_exchange} @ {opp.futures_price}\n"
-                f"Spread: {opp.spread * 100:.4f}%\n"
-                f"Funding: {opp.funding_rate * 100:.4f}% "
-                f"(every {funding_interval}h)\n"
-                f"Transfer: {d_icon}  {w_icon}\n\n"
-                f"Borrow available:\n{borrow_text}"
+                f"🚨 {tier}\n\n"
+    f"{opp.symbol}\n"
+    f"SELL SPOT: {opp.spot_exchange} @ {opp.spot_price}\n"
+    f"LONG FUTURES: {opp.futures_exchange} @ {opp.futures_price}\n"
+    f"Spread: {opp.spread * 100:.4f}%\n"
+    f"Funding: {opp.funding_rate * 100:.4f}% "
+    f"(every {funding_interval}h)\n"
+    f"Transfer: {d_icon}  {w_icon}\n\n"
+    f"Borrow available:\n{borrow_text}"
             )
 
             await context.bot.send_message(
