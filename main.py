@@ -32,12 +32,29 @@ async def engine_loop(context):
         markets = collect_all_markets()
         raw_ops = filter_opportunities(markets)
 
+        print(f"TOTAL OPPORTUNITIES: {len(raw_ops)}")
+
         sent_count = 0
 
         for opp in raw_ops:
 
-            if sent_count >= MAX_ALERTS_PER_CYCLE:
-                break
+            borrow_sources = borrow_cache.get(opp.symbol, [])
+
+            spread = opp.spread
+            funding = opp.funding_rate
+
+            spread_ok = spread >= config.MIN_SPREAD_PERCENT
+            funding_negative = funding <= -config.FUNDING_THRESHOLD
+
+            # DEBUG PRINT
+            print(
+                f"[DEBUG] {opp.symbol} | "
+                f"SPREAD: {spread*100:.3f}% | "
+                f"FUNDING: {funding*100:.3f}% | "
+                f"SPREAD_OK: {spread_ok} | "
+                f"FUNDING_OK: {funding_negative} | "
+                f"BORROW: {borrow_sources}"
+            )
 
             key = (
                 opp.symbol,
@@ -48,17 +65,11 @@ async def engine_loop(context):
             if key in sent_cache:
                 continue
 
-            borrow_sources = borrow_cache.get(opp.symbol, [])
-
-            spread = opp.spread
-            funding = opp.funding_rate
-
-            spread_ok = spread >= config.MIN_SPREAD_PERCENT
-            funding_negative = funding <= -config.FUNDING_THRESHOLD
+            if sent_count >= MAX_ALERTS_PER_CYCLE:
+                break
 
             tier = None
 
-            # показываем только ситуации где funding платят нам
             if spread_ok and funding_negative:
 
                 if any("Bybit Loan" in s for s in borrow_sources):
@@ -74,9 +85,6 @@ async def engine_loop(context):
             else:
                 borrow_text = "⚠️ Not found in borrow sources"
 
-            d_icon = "🟢 D" if getattr(opp, "deposit_enabled", True) else "🔴 D"
-            w_icon = "🟢 V" if getattr(opp, "withdraw_enabled", True) else "🔴 V"
-
             funding_interval = getattr(opp, "funding_interval_hours", 8)
 
             message = (
@@ -89,6 +97,8 @@ async def engine_loop(context):
                 f"(every {funding_interval}h)\n"
                 f"Borrow available:\n{borrow_text}"
             )
+
+            print(f"[SEND ALERT] {opp.symbol}")
 
             await context.bot.send_message(
                 chat_id=config.TELEGRAM_CHAT_ID,
