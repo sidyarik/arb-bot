@@ -61,25 +61,32 @@ def fetch_bybit_loans():
 
         vip_list = data.get("result", {}).get("vipCoinList", [])
 
-        for vip in vip_list:
+        # Берём только первый уровень (VIP0)
+        if not vip_list:
+            return {}
 
-            coins = vip.get("list", [])
+        coins = vip_list[0].get("list", [])
 
-            for item in coins:
+        for item in coins:
 
-                if not item.get("borrowable"):
-                    continue
+            coin = item.get("currency")
+            if not coin:
+                continue
 
-                coin = item.get("currency")
-                if not coin:
-                    continue
+            symbol = f"{coin}USDT"
 
-                symbol = f"{coin}USDT"
+            rate = float(item.get("hourlyBorrowRate", 0))
 
-                loans[symbol] = {
-                    "rate": item.get("hourlyBorrowRate", "0"),
-                    "available": item.get("maxBorrowingAmount", "0")
-                }
+            print("DEBUG BYBIT LOAN:", symbol, rate)
+
+            available = float(item.get("maxBorrowingAmount", 0))
+            borrowable = item.get("borrowable", False)
+
+            loans[symbol] = {
+                "rate": rate,
+                "available": available,
+                "borrowable": borrowable
+            }
 
         print(f"[BORROW] Bybit loans: {len(loans)} assets")
 
