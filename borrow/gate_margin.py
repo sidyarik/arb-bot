@@ -18,20 +18,17 @@ def fetch_gate_margin():
 
         for item in data:
 
-            symbol = item.get("id")
+            base = item.get("base")
+            quote = item.get("quote")
 
-            if not symbol:
+            if not base or not quote:
                 continue
 
-            if not symbol.endswith("_USDT"):
+            if quote != "USDT":
                 continue
 
-            # margin must be enabled
-            if not item.get("trade_status") == "tradable":
-                continue
-
-            normalized = symbol.replace("_", "")
-            borrowable.add(normalized)
+            symbol = f"{base}USDT"
+            borrowable.add(symbol)
 
         print(f"[BORROW] Gate margin pairs: {len(borrowable)} assets")
 
