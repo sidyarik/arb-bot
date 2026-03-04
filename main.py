@@ -55,20 +55,16 @@ async def engine_loop(context):
 
             spread_ok = spread >= config.MIN_SPREAD_PERCENT
             funding_negative = funding <= -config.FUNDING_THRESHOLD
-            spread_big = spread >= 0.03
 
             tier = None
 
-            # 🔥 Funding всегда приоритетнее спреда
+            # показываем только ситуации где funding платят нам
             if spread_ok and funding_negative:
+
                 if any("Bybit Loan" in s for s in borrow_sources):
                     tier = "TIER A — SPREAD + FUNDING + LOAN"
                 else:
                     tier = "TIER B — SPREAD + FUNDING"
-
-            # Чистый большой спред (если funding НЕ отрицательный)
-            elif spread_big and funding > -config.FUNDING_THRESHOLD:
-                tier = "TIER S — PURE SPREAD 3%+"
 
             if not tier:
                 continue
