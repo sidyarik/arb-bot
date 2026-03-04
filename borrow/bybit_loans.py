@@ -16,6 +16,13 @@ def sign(payload: str, secret: str) -> str:
     ).hexdigest()
 
 
+def safe_float(x):
+    try:
+        return float(x)
+    except:
+        return 0.0
+
+
 def fetch_bybit_loans():
 
     if not config.BYBIT_API_KEY or not config.BYBIT_SECRET:
@@ -61,7 +68,6 @@ def fetch_bybit_loans():
 
         vip_list = data.get("result", {}).get("vipCoinList", [])
 
-        # Берём только первый уровень (VIP0)
         if not vip_list:
             return {}
 
@@ -70,17 +76,19 @@ def fetch_bybit_loans():
         for item in coins:
 
             coin = item.get("currency")
-            if not coin:
+
+            # пропускаем мусор
+            if not coin or coin == "USDT":
                 continue
 
             symbol = f"{coin}USDT"
 
-            rate = float(item.get("hourlyBorrowRate", 0))
-
-            print("DEBUG BYBIT LOAN:", symbol, rate)
-
-            available = float(item.get("maxBorrowingAmount", 0))
+            rate = safe_float(item.get("hourlyBorrowRate"))
+            available = safe_float(item.get("maxBorrowingAmount"))
             borrowable = item.get("borrowable", False)
+
+            # DEBUG можно оставить пока
+            print("DEBUG BYBIT LOAN:", symbol, rate)
 
             loans[symbol] = {
                 "rate": rate,
