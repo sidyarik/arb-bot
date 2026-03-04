@@ -86,10 +86,7 @@ def fetch_bybit_loans():
             rate = safe_float(item.get("hourlyBorrowRate"))
             available = safe_float(item.get("maxBorrowingAmount"))
             borrowable = item.get("borrowable", False)
-
-            # DEBUG можно оставить пока
-            print("DEBUG BYBIT LOAN:", symbol, rate)
-
+            
             loans[symbol] = {
                 "rate": rate,
                 "available": available,
